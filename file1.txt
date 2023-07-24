@@ -1,1 +1,40 @@
-"HelloWorld" 
+import hashlib
+import time
+from aiogram import executor, Bot, Dispatcher, types
+from aiogram.types import InlineQueryResultPhoto, InlineQueryResultArticle, InputTextMessageContent, InputMediaPhoto
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+
+from TOKEN import TOKEN
+from find_img import find_img
+import random
+from PIL import Image
+
+bot = Bot(token=TOKEN)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
+
+@dp.inline_handler()
+async def inline_digit(inline_query: types.InlineQuery):
+    text = inline_query.query or 'Text'
+    imgs = find_img(text)
+    img = Image.open('image.png')
+    width = 64
+    height = 64
+    resized_img = img.resize((width, height), Image.ANTIALIAS)
+
+    articles = [types.InlineQueryResultPhoto(
+        id=hashlib.md5(f'{text}_{index}'.encode()).hexdigest(),
+        title=text,
+        photo_url=img,
+        thumb_url=img,
+        photo_width=500,
+        photo_height=500,
+        input_message_content=types.InputMediaPhoto(media=f'{img}.jpg'),
+    ) for index, img in enumerate(imgs)]
+    print(imgs)
+    await bot.answer_inline_query(results=articles,
+                                  inline_query_id=inline_query.id,
+                                  cache_time=60)
+
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
